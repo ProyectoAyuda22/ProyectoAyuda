@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TProyectoAyuda - Plataforma de Servicios</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+  <h2>ProyectoAyuda</h2>
+  <button onclick="showLogin()">Iniciar Sesión</button>
+</header>
+
+<!-- PANTALLA PRINCIPAL -->
+<div id="mainMenu" class="container">
+  <h1>ProyectoAyuda</h1>
+  <p class="subtitle">ELIGE UNA CATEGORÍA</p>
+  <div class="card">
+    <div class="category" onclick="selectService('Abogado')"><i class="fas fa-gavel"></i><br>Abogado</div>
+    <div class="category" onclick="selectService('Nutricionista')"><i class="fas fa-apple-alt"></i><br>Nutricionista</div>
+    <div class="category" onclick="selectService('Doctor')"><i class="fas fa-user-md"></i><br>Doctor</div>
+    <div class="category" onclick="selectService('Psicólogo')"><i class="fas fa-brain"></i><br>Psicólogo</div>
+    <div class="category" onclick="selectService('Leyes')"><i class="fas fa-balance-scale"></i><br>Leyes</div>
+    <div class="category" onclick="selectService('Lectura de Estudios')"><i class="fas fa-book"></i><br>Lectura de Estudios</div>
+  </div>
+</div>
+
+<!-- SELECCIÓN DE MODO -->
+<div id="modeSelect" class="container hidden">
+  <h2>Servicio seleccionado: <span id="selectedServiceName"></span></h2>
+  <p class="subtitle">Selecciona un modo de comunicación</p>
+  <div class="option" onclick="startChat('videollamada')">Videollamada - $1.50</div>
+  <div class="option" onclick="startChat('llamada')">Llamada - $1.20</div>
+  <div class="option" onclick="startChat('chat')">Mensajes - $1.00</div>
+  <button class="back-button" onclick="goBackToMain()">← Regresar a la página principal</button>
+</div>
+
+<!-- VENTANA DE CHAT -->
+<div id="chatWindow" class="container hidden">
+  <div class="chat-container">
+    <div class="chat-header">
+      <span id="chatSubject"></span>
+      <div>
+        <button id="videoBtn">Videollamada</button>
+        <button id="callBtn">Llamada</button>
+      </div>
+    </div>
+    <div id="chatMessages" class="chat-messages">
+      <p><em>Esperando respuesta de un colaborador...</em></p>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="chatInput" placeholder="Escribe tu mensaje..." />
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+  <button class="back-button" onclick="goBackToModeSelect()">← Regresar a selección de modo</button>
+</div>
+
+<!-- VENTANA DE LOGIN -->
+<div id="loginWindow" class="container hidden">
+  <h3>Iniciar Sesión</h3>
+  <input type="text" id="username" placeholder="Usuario" /><br /><br />
+  <input type="password" id="password" placeholder="Contraseña" /><br /><br />
+  <button onclick="login()">Entrar</button>
+  <button class="back-button" onclick="closeLogin()">Cancelar</button>
+</div>
+
+<!-- PANEL DE ADMIN -->
+<div id="adminPanel" class="container hidden">
+  <h3>Panel de Administración (Admin o Colaborador)</h3>
+  <div id="allChats"></div>
+  <button class="back-button" onclick="logout()">Cerrar Sesión</button>
+</div>
+
+<script>
+  let selectedService = '';
+  let selectedMode = '';
+  let currentUser = null;
+  let chats = [];
+
+  // Usuarios y contraseñas
+  const users = {
+    "Admin": "Admin22",
+    "Colaborador1": "Piña21",
+    "Colaborador2": "Piña22",
+    "Colaborador3": "Piña23",
+    "Colaborador4": "Piña24",
+    "Colaborador5": "Piña25",
+    "Colaborador6": "Piña26",
+    "Colaborador7": "Piña27"
+  };
+
+  function showLogin() {
+    hideAllSections();
+    document.getElementById('loginWindow').classList.remove('hidden');
+  }
+
+  function closeLogin() {
+    document.getElementById('loginWindow').classList.add('hidden');
+    if(currentUser) {
+      document.getElementById('adminPanel').classList.remove('hidden');
+    } else {
+      document.getElementById('mainMenu').classList.remove('hidden');
+    }
+  }
+
+  function login() {
+    const user = document.getElementById('username').value.trim();
+    const pass = document.getElementById('password').value.trim();
+
+    if(users[user] && users[user] === pass) {
+      currentUser = user;
+      alert(`Bienvenido, ${user}!`);
+      hideAllSections();
+      document.getElementById('adminPanel').classList.remove('hidden');
+      loadChats();
+    } else {
+      alert("Usuario o contraseña incorrectos");
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    chats = [];
+    hideAllSections();
+    document.getElementById('mainMenu').classList.remove('hidden');
+  }
+
+  function selectService(service) {
+    selectedService = service;
+    document.getElementById('selectedServiceName').textContent = service;
+    hideAllSections();
+    document.getElementById('modeSelect').classList.remove('hidden');
+  }
+
+  function startChat(mode) {
+    selectedMode = mode;
+    hideAllSections();
+    document.getElementById('chatWindow').classList.remove('hidden');
+
+    document.getElementById('chatSubject').textContent = `${selectedService} - ${capitalize(mode)}`;
+
+    document.getElementById('videoBtn').disabled = mode !== 'videollamada';
+    document.getElementById('callBtn').disabled = mode !== 'llamada';
+
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.innerHTML = '<p><em>Esperando respuesta de un colaborador...</em></p>';
+
+    document.getElementById('chatInput').value = '';
+
+    chats.push({
+      user: 'Invitado',
+      service: selectedService,
+      mode: mode,
+      messages: []
+    });
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const chatMessages = document.getElementById('chatMessages');
+    const newMessage = document.createElement('p');
+    newMessage.innerHTML = `<strong>Tú:</strong> ${escapeHtml(msg)}`;
+    chatMessages.appendChild(newMessage);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    chats[chats.length - 1].messages.push({ from: 'user', text: msg });
+
+    input.value = '';
+  }
+
+  function loadChats() {
+    let out = '';
+    for (const chat of chats) {
+      out += `<div><h4>${chat.service} (${chat.mode})</h4><div>${chat.messages.map(m =>
+        `<p><strong>${m.from === 'user' ? 'Cliente' : 'Colaborador'}:</strong> ${m.text}</p>`).join('')}</div><hr></div>`;
+    }
+    document.getElementById('allChats').innerHTML = out || '<p>No hay chats aún.</p>';
+  }
+
+  function goBackToMain() {
+    hideAllSections();
+    document.getElementById('mainMenu').classList.remove('hidden');
+  }
+
+  function goBackToModeSelect() {
+    hideAllSections();
+    document.getElementById('modeSelect').classList.remove('hidden');
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function hideAllSections() {
+    ['mainMenu', 'modeSelect', 'chatWindow', 'loginWindow', 'adminPanel'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+  }
+</script>
+
+</body>
+</html>
