@@ -32,34 +32,16 @@
 <div id="modeSelect" class="container hidden">
   <h2>Servicio seleccionado: <span id="selectedServiceName"></span></h2>
   <p class="subtitle">Selecciona un modo de comunicación</p>
-  <div class="option" onclick="startChat('videollamada')">Videollamada - $1.50</div>
-  <div class="option" onclick="startChat('llamada')">Llamada - $1.20</div>
-  <div class="option" onclick="startChat('chat')">Mensajes - $1.00</div>
+
+  <!-- OPCIONES QUE MANDAN DIRECTO A WHATSAPP -->
+  <div class="option" onclick="sendToWhatsApp('Videollamada - $1.50')">Videollamada - $1.50</div>
+  <div class="option" onclick="sendToWhatsApp('Llamada - $1.20')">Llamada - $1.20</div>
+  <div class="option" onclick="sendToWhatsApp('Chat - $1.00')">Mensajes - $1.00</div>
+
   <button class="back-button" onclick="goBackToMain()">← Regresar a la página principal</button>
 </div>
 
-<!-- VENTANA DE CHAT -->
-<div id="chatWindow" class="container hidden">
-  <div class="chat-container">
-    <div class="chat-header">
-      <span id="chatSubject"></span>
-      <div>
-        <button id="videoBtn">Videollamada</button>
-        <button id="callBtn">Llamada</button>
-      </div>
-    </div>
-    <div id="chatMessages" class="chat-messages">
-      <p><em>Esperando respuesta de un colaborador...</em></p>
-    </div>
-    <div class="chat-input">
-      <input type="text" id="chatInput" placeholder="Escribe tu mensaje..." />
-      <button onclick="sendMessage()">Enviar</button>
-    </div>
-  </div>
-  <button class="back-button" onclick="goBackToModeSelect()">← Regresar a selección de modo</button>
-</div>
-
-<!-- VENTANA DE LOGIN -->
+<!-- LOGIN -->
 <div id="loginWindow" class="container hidden">
   <h3>Iniciar Sesión</h3>
   <input type="text" id="username" placeholder="Usuario" /><br /><br />
@@ -68,20 +50,17 @@
   <button class="back-button" onclick="closeLogin()">Cancelar</button>
 </div>
 
-<!-- PANEL DE ADMIN -->
+<!-- PANEL ADMIN -->
 <div id="adminPanel" class="container hidden">
   <h3>Panel de Administración (Admin o Colaborador)</h3>
-  <div id="allChats"></div>
   <button class="back-button" onclick="logout()">Cerrar Sesión</button>
 </div>
 
 <script>
-  let selectedService = '';
-  let selectedMode = '';
+  let selectedService = "";
   let currentUser = null;
-  let chats = [];
 
-  // Usuarios y contraseñas
+  // Usuarios
   const users = {
     "Admin": "Admin22",
     "Colaborador1": "Piña21",
@@ -99,24 +78,19 @@
   }
 
   function closeLogin() {
-    document.getElementById('loginWindow').classList.add('hidden');
-    if(currentUser) {
-      document.getElementById('adminPanel').classList.remove('hidden');
-    } else {
-      document.getElementById('mainMenu').classList.remove('hidden');
-    }
+    hideAllSections();
+    document.getElementById('mainMenu').classList.remove('hidden');
   }
 
   function login() {
     const user = document.getElementById('username').value.trim();
     const pass = document.getElementById('password').value.trim();
 
-    if(users[user] && users[user] === pass) {
+    if (users[user] && users[user] === pass) {
       currentUser = user;
       alert(`Bienvenido, ${user}!`);
       hideAllSections();
       document.getElementById('adminPanel').classList.remove('hidden');
-      loadChats();
     } else {
       alert("Usuario o contraseña incorrectos");
     }
@@ -124,7 +98,6 @@
 
   function logout() {
     currentUser = null;
-    chats = [];
     hideAllSections();
     document.getElementById('mainMenu').classList.remove('hidden');
   }
@@ -132,56 +105,18 @@
   function selectService(service) {
     selectedService = service;
     document.getElementById('selectedServiceName').textContent = service;
+
     hideAllSections();
     document.getElementById('modeSelect').classList.remove('hidden');
   }
 
-  function startChat(mode) {
-    selectedMode = mode;
-    hideAllSections();
-    document.getElementById('chatWindow').classList.remove('hidden');
+  // 🚀 NUEVA FUNCIÓN PARA MANDAR A WHATSAPP
+  function sendToWhatsApp(mode) {
+    const phone = "50432905311";
+    const message = `Hola, quiero el servicio de ${selectedService} en modalidad: ${mode}`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-    document.getElementById('chatSubject').textContent = `${selectedService} - ${capitalize(mode)}`;
-
-    document.getElementById('videoBtn').disabled = mode !== 'videollamada';
-    document.getElementById('callBtn').disabled = mode !== 'llamada';
-
-    const chatMessages = document.getElementById('chatMessages');
-    chatMessages.innerHTML = '<p><em>Esperando respuesta de un colaborador...</em></p>';
-
-    document.getElementById('chatInput').value = '';
-
-    chats.push({
-      user: 'Invitado',
-      service: selectedService,
-      mode: mode,
-      messages: []
-    });
-  }
-
-  function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
-    if (!msg) return;
-
-    const chatMessages = document.getElementById('chatMessages');
-    const newMessage = document.createElement('p');
-    newMessage.innerHTML = `<strong>Tú:</strong> ${escapeHtml(msg)}`;
-    chatMessages.appendChild(newMessage);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    chats[chats.length - 1].messages.push({ from: 'user', text: msg });
-
-    input.value = '';
-  }
-
-  function loadChats() {
-    let out = '';
-    for (const chat of chats) {
-      out += `<div><h4>${chat.service} (${chat.mode})</h4><div>${chat.messages.map(m =>
-        `<p><strong>${m.from === 'user' ? 'Cliente' : 'Colaborador'}:</strong> ${m.text}</p>`).join('')}</div><hr></div>`;
-    }
-    document.getElementById('allChats').innerHTML = out || '<p>No hay chats aún.</p>';
+    window.location.href = url;
   }
 
   function goBackToMain() {
@@ -189,23 +124,8 @@
     document.getElementById('mainMenu').classList.remove('hidden');
   }
 
-  function goBackToModeSelect() {
-    hideAllSections();
-    document.getElementById('modeSelect').classList.remove('hidden');
-  }
-
-  function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
   function hideAllSections() {
-    ['mainMenu', 'modeSelect', 'chatWindow', 'loginWindow', 'adminPanel'].forEach(id => {
+    ['mainMenu', 'modeSelect', 'loginWindow', 'adminPanel'].forEach(id => {
       document.getElementById(id).classList.add('hidden');
     });
   }
